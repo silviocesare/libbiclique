@@ -1,0 +1,4 @@
+Tested: (with  warnings... but the program still works)
+g++ 2.95.3 SunOS 5.9 sun4u sparc
+g++ 3.2.3  Linux 2.4.21-18
+g++ 3.3	   MacOSX 10.3.4 Darwin 7.4.1 
