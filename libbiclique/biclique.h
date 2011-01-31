@@ -23,6 +23,7 @@
 #include <iostream>		// 
 #include <map>			// map
 #include <set>			// set
+#include <list>
 #include <iterator>		// ostream_iterator
 #include <algorithm>		// copy, transform
 #include <string>		// for nexus file...
@@ -71,15 +72,14 @@ private:
   // generate L_Set = gamma(R_Set, R_Table)
 
   // the main loop while rank = 2
-  set<set<R_Type> > expand_B1(const set<set<R_Type> > &, const set<set<R_Type> > &, ostream &);
+  set<set<R_Type> > expand_B1(const set<set<R_Type> > &, const set<set<R_Type> > &);
 
   // // the main loop for rank > 2...
   set<set<R_Type> > expand_Bk
-    (const set<set<R_Type> > &, const set<set<R_Type> > &, const set<set<R_Type> > &,  ostream &);
+    (const set<set<R_Type> > &, const set<set<R_Type> > &, const set<set<R_Type> > &);
 
-  void output_biclique(ostream&, ostream&, set<set<R_Type> >&);
-  //void output_biclique(char *, char *, SRS_T&);
-  
+  void get_results(std::list<std::pair<std::list<L_Type>, std::list<R_Type> > > &results, set<set<R_Type> >& _C1);
+
 public:
   size_t read(char *);		// read bi-graph file
   size_t read(istream &);	// read bi-graph from a stream
@@ -89,10 +89,9 @@ public:
   size_t l_size() const { return L_Table.size(); }
   size_t r_size() const { return R_Table.size(); }
 
-  void add_edge(L_Type lnode, R_Type rnode)
+  void add_edge(L_Type lnode, R_Type rnode);
+  void get_results(std::list<std::pair<std::list<L_Type>, std::list<R_Type> > > &results);
 
-  //size_t mica(char *, ostream &);	// save into file, log to stream.
-  size_t mica(ostream &, ostream &, ostream &);	
   // use stream to output result...
   // first: bicliq, second: size, third: normal output
   size_t remove_bicliq(const set<L_Type> &, const set<R_Type> &);
@@ -151,7 +150,8 @@ size_t SimpleBigraph<L_Type, R_Type>::read(char * filename)
 }
 
 template <class L_Type, class R_Type>
-void SimpleBigraph<<L_Type, R_Type>::add_edge(L_Type lnode, R_Type rnode)
+void SimpleBigraph<L_Type, R_Type>::
+add_edge(L_Type lnode, R_Type rnode)
 {
     L_Table[lnode].insert(rnode);	// insert the node into it's place.
     R_Table[rnode].insert(lnode);
@@ -193,17 +193,14 @@ size_t SimpleBigraph<L_Type, R_Type>::read_nexus(char * filename)
 // R1..Rm
 // .....
 template <class L_Type, class R_Type>
-size_t SimpleBigraph<L_Type, R_Type>::
-mica(ostream& bicliq_out, ostream& size_out, ostream & OS = cout)
+void SimpleBigraph<L_Type, R_Type>::
+get_results(std::list<std::pair<std::list<L_Type>, std::list<R_Type> > > &results)
 {
   // here we focus on R(B) to represent a biclique.
 
   size_t rank(1);
   set<set<R_Type> > B1, Bk, C, Bkk;
   
-  OS << "Starting MICA.....\n";
-  OS << "Step 1) Building B1" << endl;
-
   // in case there are garbages... we only pick real stars...
   for (typename map<L_Type, set<R_Type> >::iterator it = L_Table.begin(); it != L_Table.end(); it++) {
     if (it->second.size() > 0) {
@@ -213,47 +210,29 @@ mica(ostream& bicliq_out, ostream& size_out, ostream & OS = cout)
 
   C = B1;
 
-  OS << "B1 size: " << B1.size() << endl;
-
-  OS << "Step 2) Expanding max. bicliques.\n";
   // here should be the main loop of MICA.
   // but we deal w/ rank 2 seperately here... can save half B2 here.
 
   rank++;
-  OS << "***** Proccessing rank " << rank << " *****" << endl;
   
-  Bk = expand_B1(B1, C, OS);
+  Bk = expand_B1(B1, C);
 
   // insert Bk into C
   copy(Bk.begin(), Bk.end(), inserter(C, C.begin()) );
   
-  OS << endl;
-  OS << "Found: " << C.size()  << endl;
-  OS << "New: "   << Bk.size() << endl;
-
   // okay, now we start to iterate!!!
   while (!Bk.empty()) {
 
     rank++;
-    OS << "***** Proccessing rank " << rank << " *****" << endl;
     
-    Bkk = expand_Bk(B1, Bk, C, OS);
+    Bkk = expand_Bk(B1, Bk, C);
     
     // insert Bkk into C
     copy(Bkk.begin(), Bkk.end(), inserter(C, C.begin()));
     Bkk.swap(Bk);
-
-    OS << endl;
-    OS << "Found: " << C.size() << endl;
-    OS << "New: " << Bk.size() << endl;
   }
 
-  OS << "Step 3) Output results.\n";
-  OS << "Total maximal bicliques: " << C.size() << endl;
-
-  output_biclique(bicliq_out, size_out, C);
-  
-  return C.size();
+  get_results(results, C);
 }
 
 /* biclique expanding loop for rank 2. */
@@ -261,8 +240,7 @@ template <class L_Type, class R_Type>
 set<set<R_Type> > 
 SimpleBigraph<L_Type, R_Type>::
 expand_B1(const set<set<R_Type> > & _B1, 
-	  const set<set<R_Type> > & _C1, 
-	  ostream & _OS)
+	  const set<set<R_Type> > & _C1)
 {
   set<set<R_Type> > _Bk;
   set<R_Type> cliq;
@@ -297,8 +275,7 @@ template <class L_Type, class R_Type>
 set<set<R_Type> > SimpleBigraph<L_Type, R_Type>::
 expand_Bk(const set<set<R_Type> > & _B1, 
 	  const set<set<R_Type> > & _Bk, 
-	  const set<set<R_Type> > & _C1, 
-	  ostream & _OS)
+	  const set<set<R_Type> > & _C1)
 {
   set<set<R_Type> > _Bkk;
   set<R_Type> cliq;
@@ -329,26 +306,30 @@ expand_Bk(const set<set<R_Type> > & _B1,
 // convert all R(B) back to L(B)...
 template <class L_Type, class R_Type>
 void SimpleBigraph<L_Type, R_Type>::
-output_biclique(ostream& _bicliq_out, 
-		ostream& _size_out, 
-		set<set<R_Type> >& _C1)
+get_results(std::list<std::pair<std::list<L_Type>, std::list<R_Type> > > &results, set<set<R_Type> >& _C1)
 {
   set<L_Type> L;	// set of l
   set<R_Type> R;	// set of r
 
   // go through all R(B)
   for (typename set<set<R_Type> >::iterator it = _C1.begin(); it != _C1.end(); it++) {
+    std::pair<std::list<L_Type>, std::list<R_Type> > biclique;
+
     // find gamma(R(B))
     R = *it;
     L = gamma<L_Type, R_Type>(R, R_Table);
 
-    _size_out << L.size() << " " << R.size() << endl;
+    typename set<L_Type>::iterator itL = L.begin();
+    for (size_t i = 0; i < L.size(); i++, itL++) {
+      biclique.first.push_back(*itL);
+    }
 
-    set_stm<L_Type>(L, _bicliq_out);
-    _bicliq_out << endl;
-    set_stm<R_Type>(R, _bicliq_out);
-    _bicliq_out << endl;
-    _bicliq_out << endl;		// make an empty line....
+    typename set<R_Type>::iterator itR = R.begin();
+    for (size_t i = 0; i < R.size(); i++, itR++) {
+      biclique.second.push_back(*itR);
+    }
+
+    results.push_back(biclique);
   }
 }
 
