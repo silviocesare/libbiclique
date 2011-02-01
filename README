@@ -1,9 +1,8 @@
 An implementation of maximal biclique enumeration.
 Original version http://genome.cs.iastate.edu/supertree/download/biclique/README.html
 
-Patched to compile on modern Linux in ./biclique.orig.patch This is the version you should use for now.
-Also patched to make using as a library easier in ./libbiclique This is unstable.
-Intending to make as a Linux package for Debian or Fedora.
+Patched to compile on modern Linux in ./biclique.orig.patch
+Also patched to make using as a library easier and packaged for Debian.
 
 --
 Silvio Cesare
