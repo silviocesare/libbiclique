@@ -1,0 +1,10 @@
+Package: libbiclique
+Version: 1.0
+Section: custom
+Priority: optional
+Architecture: all
+Essential: no
+Depends:
+Installed-Size: 1024
+Maintainer: silvio.cesare@gmail.com
+Description: libbiclique
